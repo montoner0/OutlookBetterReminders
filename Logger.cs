@@ -7,7 +7,7 @@ using System.Threading;
 namespace BetterReminders
 {
     /// <summary>
-    /// A trivial class for diagnostic logging to a text file in usuer=profiledir/AppData/Local/OutlookBetterReminders;
+    /// A trivial class for diagnostic logging to a text file in %LocalAppData%/OutlookBetterReminders;
     /// also writes to the standard Diagnostics.Trace logger as a backup, though that's not so easy to use from an addin.
     ///
     /// Since most people won't want a log, we only generate one if the file already exists
@@ -24,11 +24,11 @@ namespace BetterReminders
         {
             try
             {
-                string logpath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + @"\OutlookBetterReminders\better-reminders.log";
+                string logpath = $@"{Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)}\OutlookBetterReminders\better-reminders.log";
                 if (!File.Exists(logpath))
                 {
                     // we still have diagnotics.trace logging
-                    Info("Not writing a .log file as " + logpath + " does not exist");
+                    Info($"Not writing a .log file as {logpath} does not exist");
                     return;
                 }
                 // create a new text file, overwrite existing
@@ -44,8 +44,9 @@ namespace BetterReminders
 
         public void Error(string msg, Exception ex)
         {
-            log("ERROR", msg + "\n" + ex);
+            log("ERROR", $"{msg}\n{ex}");
         }
+
         public void Error(string msg)
         {
             log("ERROR", msg);
@@ -55,6 +56,7 @@ namespace BetterReminders
         {
             log("INFO", msg);
         }
+
         public void Debug(string msg)
         {
             log("DEBUG", msg);
@@ -64,9 +66,8 @@ namespace BetterReminders
 
         private void log(string level, string msg)
         {
-            System.Diagnostics.Trace.TraceInformation("BetterReminders - "+level+" - "+msg);
-            if (sw != null)
-                sw.WriteLine("[" + Thread.CurrentThread.Name + " " + DateTime.Now + "] "+level+" - " + msg);
+            System.Diagnostics.Trace.TraceInformation($"BetterReminders - {level} - {msg}");
+            sw?.WriteLine($"[{Thread.CurrentThread.Name} {DateTime.Now}] {level} - {msg}");
         }
 
         public void Shutdown()

@@ -31,44 +31,45 @@ namespace BetterReminders
 
         public DateTime GetNextReminderTime(DateTime startTime)
         {
-            return FromNow
-                ? DateTime.Now + new TimeSpan(0, 0, Secs)
-                : startTime + new TimeSpan(0, 0, Secs);
+            return (FromNow ? DateTime.Now : startTime).AddSeconds(Secs);
         }
 
         public static SnoozeTime Parse(string t)
         {
             Match m = new Regex(@"([\d.]+) *([s|h|m])").Match(t.ToLowerInvariant());
             if (!m.Success)
-                throw new ArgumentException("Invalid snooze time '" + t + "': must contain <number> s|m|h");
+                throw new ArgumentException($"Invalid snooze time '{t}': must contain <number> s|m|h");
 
-            bool fromNow = !(t.ToLowerInvariant().Contains("start") || t.ToLowerInvariant().Contains("after") || t.ToLowerInvariant().Contains("before"));
+            bool fromNow = !(t.IndexOf("start", StringComparison.InvariantCultureIgnoreCase) >= 0
+                             || t.IndexOf("after", StringComparison.InvariantCultureIgnoreCase) >= 0
+                             || t.IndexOf("before", StringComparison.InvariantCultureIgnoreCase) >= 0);
             float secs = float.Parse(m.Groups[1].Value);
             switch (m.Groups[2].Value)
             {
-                case "m": secs = secs * 60; break;
-                case "h": secs = secs * 60 * 60; break;
+                case "m": secs *= 60; break;
+                case "h": secs *= 60 * 60; break;
                 case "s": break;
             }
             if (secs < 1)
                 throw new ArgumentException("Invalid snooze time, must be non-zero");
-            if ((!t.ToLowerInvariant().Contains("after")) && !fromNow)
-                secs = secs * -1;
+            if (t.IndexOf("after", StringComparison.InvariantCultureIgnoreCase) < 0 && !fromNow)
+                secs = -secs;
             return new SnoozeTime(Convert.ToInt32(secs), fromNow);
         }
+
         public override string ToString()
         {
             string t;
-            int absSecs = (Secs > 0) ? Secs : -1 * Secs;
+            int absSecs = (Secs > 0) ? Secs : -Secs;
 
             t = absSecs >= 60 && absSecs % 60 == 0
-                ? (absSecs / 60) + " minute" + (absSecs == 60 ? "" : "s")
-                : absSecs + " second" + (absSecs == 1 ? "" : "s");
+                ? $"{absSecs / 60} minute{(absSecs == 60 ? "" : "s")}"
+                : $"{absSecs} second{(absSecs == 1 ? "" : "s")}";
             t = FromNow
                 ? "Remind in " + t
-                : "Remind " + t + (Secs < 0 ? " before start time" : " after start time");
+                : $"Remind {t}{(Secs < 0 ? " before start time" : " after start time")}";
             // sanity check assertion
-            return Parse(t).Equals(this) ? t : throw new Exception("Error in snooze time ToString/Parse for: " + t);
+            return Parse(t).Equals(this) ? t : throw new Exception($"Error in snooze time ToString/Parse for: {t}");
         }
 
         public static List<SnoozeTime> ParseList(string list)

@@ -59,18 +59,26 @@ namespace BetterReminders
         /// Don't do it so often that responsiveness is reduced, but do it often enough we have a good chance of
         /// picking up late new/changed invites
         /// </summary>
-        private TimeSpan SleepInterval => new TimeSpan(0, 0, Settings.Default.searchFrequencySecs);
+        private TimeSpan SleepInterval => TimeSpan.FromSeconds(Settings.Default.searchFrequencySecs);
 
-        private TimeSpan DefaultReminderTime => new TimeSpan(0, 0, Settings.Default.defaultReminderSecs);
+        private TimeSpan DefaultReminderTime => TimeSpan.FromSeconds(Settings.Default.defaultReminderSecs);
 
         /// <summary>
         /// Wait a bit before doing anything, to give outlook a chance to finish starting and improve responsiveness
         /// </summary>
         private const int StartupDelaySecs = 20;
 
-        private readonly TimeSpan OneDay = new TimeSpan(1, 0, 0, 0);
+        private readonly TimeSpan OneDay = TimeSpan.FromDays(1);
 
         #endregion
+
+        private Outlook.Items findCalendarItems(DateTime startFrom, DateTime startTo, DateTime endFrom, DateTime endTo)
+        {
+            var filter = $"[Start] >= '{startFrom:g}' AND [Start] <= '{startTo:g}'"
+                         + $" AND [End] >= '{endFrom:g}' AND [End] <= '{endTo:g}'";
+
+            return findCalendarItems(filter);
+        }
 
         private Outlook.Items findCalendarItems(string filter)
         {
@@ -81,7 +89,7 @@ namespace BetterReminders
             calItems.Sort("[Start]", false);
             calItems.IncludeRecurrences = true;
             calItems = calItems.Restrict(filter);
-            logger.Debug("Searching calendar using filter: " + filter + " -> got " + calItems.Count + " items");
+            logger.Debug($"Searching calendar using filter: {filter} -> got {calItems.Count} items");
             return calItems;
         }
 
@@ -99,7 +107,7 @@ namespace BetterReminders
                 // whether to defer the meeting
                 if (m.UpdateStartTime())
                 {
-                    logger.Info("Resetting reminder time for " + m + " due to change in start time");
+                    logger.Info($"Resetting reminder time for {m} due to change in start time");
                     m.NextReminderTime = m.StartTime - DefaultReminderTime;
                 }
             }
@@ -113,13 +121,7 @@ namespace BetterReminders
             if (now - lastMeetingSearchTime > OneDay)
                 lastMeetingSearchTime = now;
 
-            Outlook.Items calItems = findCalendarItems(
-                $"[Start] >= '{lastMeetingSearchTime:g}'"
-                + $" AND [Start] <= '{now + SleepInterval + DefaultReminderTime:g}'"
-                + $" AND [End] >= '{now:g}'"
-                // not really necessary but
-                + $" AND [End] <= '{now + OneDay:g}'"
-                );
+            Outlook.Items calItems = findCalendarItems(lastMeetingSearchTime, now + SleepInterval + DefaultReminderTime, now, now + OneDay);
 
             // next time we'll monitor from now on
             lastMeetingSearchTime = now;
@@ -137,15 +139,15 @@ namespace BetterReminders
             {
                 if (item.AllDayEvent) continue;
 
-                if (subjectExcludeRegex != null && subjectExcludeRegex.IsMatch(item.Subject ?? ""))
+                if (subjectExcludeRegex?.IsMatch(item.Subject ?? "") == true)
                 {
-                    logger.Debug("Ignoring excluded meeting based on subject: " + item.Subject);
+                    logger.Debug($"Ignoring excluded meeting based on subject: {item.Subject}");
                     continue;
                 }
 
                 if (UpcomingMeeting.IsAppointmentCancelled(item))
                 {
-                    logger.Debug("Ignoring cancelled meeting: "+item.Subject);
+                    logger.Debug($"Ignoring cancelled meeting: {item.Subject}");
                     continue;
                 }
 
@@ -161,11 +163,11 @@ namespace BetterReminders
             var expired = new List<string>(upcoming.Values.Where(e => (e.EndTime < now) || e.IsDeleted).Select(e => e.ID));
             foreach (var id in expired)
             {
-                logger.Debug("Removing expired item: " + upcoming[id]);
+                logger.Debug($"Removing expired item: {upcoming[id]}");
                 upcoming[id].Dispose();
                 upcoming.Remove(id);
             }
-            logger.Debug(upcoming.Count + " upcoming items: " + string.Join("\n	  ", upcoming.Values));
+            logger.Debug($"{upcoming.Count} upcoming items: {string.Join("\n	  ", upcoming.Values)}");
         }
 
         /// <summary>
@@ -203,13 +205,14 @@ namespace BetterReminders
                 {
                     // either we wokeup just in time or maybe we have a backlog of reminder(s) to clear
                     // (nb: use 500ms fudge factor to make sure potentially imprecise timers don't hurt us)
-                    if (next.NextReminderTime <= now + new TimeSpan(0, 0, 0, 0, 500))
+                    if (next.NextReminderTime <= now.AddMilliseconds(500))
                     {
-                        logger.Info("Showing reminder for: " + next);
+                        logger.Info($"Showing reminder for: {next}");
                         playReminderSound();
-                        ReminderForm form = new ReminderForm(next);
-                        form.FormClosed += ReminderFormClosedEventHandler;
-                        form.Show();
+                        using (ReminderForm form = new ReminderForm(next)) {
+                            form.FormClosed += ReminderFormClosedEventHandler;
+                            form.Show();
+                        }
                         // timers etc are disabled until the current window has been closed -
                         // simpler to manage and avoids getting a million popups if you leave it running while on vacation
                         return;
@@ -223,15 +226,15 @@ namespace BetterReminders
                 if (myTimer.Interval <= 0)
                 {
                     // should never happen
-                    logger.Info("Warning: attempted to set invalid interval of " + myTimer.Interval + "; next=" + next);
+                    logger.Info($"Warning: attempted to set invalid interval of {myTimer.Interval}; next={next}");
                     myTimer.Interval = 100;
                 }
                 nextPlannedWakeup = sleepUntil; // used to measure lateness
-                logger.Debug("Setting timer to wait in " + myTimer.Interval + " at " + sleepUntil);
+                logger.Debug($"Setting timer to wait in {myTimer.Interval} at {sleepUntil}");
                 myTimer.Start();
 
-                if (DateTime.Now - now > new TimeSpan(0, 0, 0, 0, 500))
-                    logger.Debug("waitOrRemind took a long time: " + (DateTime.Now - now));
+                if (DateTime.Now > now.AddMilliseconds(500))
+                    logger.Debug($"waitOrRemind took a long time: {DateTime.Now - now}");
             }
             catch (Exception ex)
             {
@@ -240,10 +243,10 @@ namespace BetterReminders
             }
         }
 
-        private void ThisAddIn_Startup(object sender, System.EventArgs e)
+        private void ThisAddIn_Startup(object sender, EventArgs e)
         {
-            logger.Info("AddIn is starting: v"+ System.Reflection.Assembly.GetExecutingAssembly().GetName().Version);
-            logger.Debug("Settings are under: " + ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.PerUserRoamingAndLocal).FilePath);
+            logger.Info($"AddIn is starting: v{System.Reflection.Assembly.GetExecutingAssembly().GetName().Version}");
+            logger.Debug($"Settings are under: {ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.PerUserRoamingAndLocal).FilePath}");
 
             Globals.BetterRemindersAddIn.Application.OptionsPagesAdd += new Outlook.ApplicationEvents_11_OptionsPagesAddEventHandler(Application_OptionsPagesAdd);
 
@@ -251,7 +254,7 @@ namespace BetterReminders
             myTimer.Tick += TimerEventProcessor;
             myTimer.Interval = StartupDelaySecs * 10;
             myTimer.Start();
-            nextPlannedWakeup = DateTime.Now + new TimeSpan(0, 0, 0, 0, myTimer.Interval);
+            nextPlannedWakeup = DateTime.Now.AddMilliseconds(myTimer.Interval);
 
             if (Settings.Default.upgradeSettings) {
                 Settings.Default.Upgrade();
@@ -281,12 +284,11 @@ namespace BetterReminders
             Pages.Add(new PreferencesPage(), "BetterReminders");
         }
 
-        private void ThisAddIn_Shutdown(object sender, System.EventArgs e)
+        private void ThisAddIn_Shutdown(object sender, EventArgs e)
         {
             logger.Debug("Shutdown");
             myTimer.Stop();
-            if (soundPlayer != null)
-                soundPlayer.Dispose();
+            soundPlayer?.Dispose();
             logger.Shutdown();
         }
 
@@ -295,7 +297,7 @@ namespace BetterReminders
         private void TimerEventProcessor(object myObject, EventArgs myEventArgs)
         {
             myTimer.Stop();
-            logger.Debug("Timer triggered at " + DateTime.Now + " (late by " + Math.Round((DateTime.Now - nextPlannedWakeup).TotalSeconds) + "s)");
+            logger.Debug($"Timer triggered at {DateTime.Now} (late by {Math.Round((DateTime.Now - nextPlannedWakeup).TotalSeconds)}s)");
 
             try
             {
@@ -321,35 +323,29 @@ namespace BetterReminders
 
             // iterate over all of today's items
             logger.Debug("Advanced diagnostics: logging data on items in today's calendar...");
-            Outlook.Items calItems = findCalendarItems(
-                "[Start] >= '" + (DateTime.Today).ToString("g") + "'"
-                + " AND [Start] <= '" + (DateTime.Today + OneDay).ToString("g") + "'"
-                + " AND [End] >= '" + (DateTime.Today).ToString("g") + "'"
-                // not really necessary but
-                + " AND [End] <= '" + (DateTime.Today + OneDay).ToString("g") + "'"
-                );
+            Outlook.Items calItems = findCalendarItems(DateTime.Today, DateTime.Today + OneDay, DateTime.Today, DateTime.Today + OneDay);
             var subjectExcludeRegex = getSubjectExcludeRegex();
             int count = 0;
             foreach (Outlook.AppointmentItem item in calItems)
             {
                 count++;
                 if (string.IsNullOrWhiteSpace(item.Subject))
-                    logger.Debug("Found meeting with subject '"+item.Subject+"' at "+item.Start);
+                    logger.Debug($"Found meeting with subject '{item.Subject}' at {item.Start}");
 
                 if (item.AllDayEvent) continue; // else constructor will throw
 
                 var meeting = new UpcomingMeeting(item, item.Start - DefaultReminderTime);
                 if (meeting.GetMeetingUrl() != "")
-                    logger.Debug("Extracted meeting URL from '"+meeting.Subject+"': '"+meeting.GetMeetingUrl()+"'");
+                    logger.Debug($"Extracted meeting URL from '{meeting.Subject}': '{meeting.GetMeetingUrl()}'");
                 else if (meeting.Body.Trim() != "")
                 {
                     // This is a bit verbose but may be needed sometimes for debugging URL regexes (at least until we build a proper UI for that task)
-                    logger.Info("No meeting URL found in '" + meeting.Subject + "': \n-------------------------------------\n" + meeting.Body+ "\n-------------------------------------\n");
+                    logger.Info($"No meeting URL found in '{meeting.Subject}': \n-------------------------------------\n{meeting.Body}\n-------------------------------------\n");
                 }
                 if (subjectExcludeRegex != null && subjectExcludeRegex.IsMatch(item.Subject ?? ""))
-                    logger.Info("This item will be ignored due to subject exclude regex: '"+item.Subject+"'");
+                    logger.Info($"This item will be ignored due to subject exclude regex: '{item.Subject}'");
             }
-            logger.Debug("Completed advanced diagnostics - checked "+count+" calendar items for today\n\n");
+            logger.Debug($"Completed advanced diagnostics - checked {count} calendar items for today\n\n");
         }
 
         void ReminderFormClosedEventHandler(object sender, FormClosedEventArgs e)
@@ -362,8 +358,8 @@ namespace BetterReminders
         {
             if (Settings.Default.playSoundOnReminder == "(default)")
                 System.Media.SystemSounds.Asterisk.Play();
-            else if (soundPlayer != null)
-                soundPlayer.Play();
+            else
+                soundPlayer?.Play();
         }
 
         #region VSTO generated code

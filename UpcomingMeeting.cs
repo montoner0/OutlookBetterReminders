@@ -37,8 +37,7 @@ namespace BetterReminders
 
         public bool IsCancelled;
 
-        private string id;
-        public string ID => id;
+        public string ID { get; }
 
         private string subject;
         public string Subject => subject ?? "<no subject>";
@@ -64,20 +63,21 @@ namespace BetterReminders
                 return m.Success ? m.Groups["url"].Value : "";
             } catch (Exception e)
             {
-                logger.Info("Error creating or matching regex '" + regexSetting + "' for "+this+": " + e);
+                logger.Info($"Error creating or matching regex '{regexSetting}' for {this}: {e}");
                 return "";
             }
         }
         public IEnumerable<string> GetAttendees()
         {
             string currentUser = OutlookItem.Application.Session.CurrentUser.Name;
-            string all = OutlookItem.RequiredAttendees+";"+OutlookItem.OptionalAttendees;
-            return all.Split(';').Select(s => s.Trim()).Where(s => ((s??"") != "") && s != currentUser);
+            string all = $"{OutlookItem.RequiredAttendees};{OutlookItem.OptionalAttendees}";
+            return all.Split(';').Select(s => s.Trim()).Where(s => (s ?? "") != "" && s != currentUser);
         }
         public string getOrganizer()
         {
-            if (OutlookItem.Organizer == null) return null;
-            return OutlookItem.Organizer == OutlookItem.Application.Session.CurrentUser.Name ? "<me>" : OutlookItem.Organizer;
+            return OutlookItem.Organizer == null
+                ? null
+                : OutlookItem.Organizer == OutlookItem.Application.Session.CurrentUser.Name ? "<me>" : OutlookItem.Organizer;
         }
 
         public static bool IsAppointmentCancelled(Outlook.AppointmentItem item)
@@ -92,7 +92,7 @@ namespace BetterReminders
             item.BeforeDelete += item_BeforeDelete;
             OutlookItem = item;
 
-            id = OutlookItem.EntryID;
+            ID = OutlookItem.EntryID;
             subject = OutlookItem.Subject;
             NextReminderTime = reminderTime;
 
@@ -106,7 +106,7 @@ namespace BetterReminders
         private bool deleted;
         private void item_BeforeDelete(object Item, ref bool Cancel)
         {
-            logger.Info("Item was deleted: "+Subject);
+            logger.Info($"Item was deleted: {Subject}");
             // to prevent reminders being displayed for this once it's deleted,
             Dispose();
         }
@@ -114,8 +114,8 @@ namespace BetterReminders
         public override string ToString()
         {
             return deleted
-                ? "DeletedMeeting<subject=" + Subject + ">"
-                : "Meeting<start=" +StartTime+", end="+EndTime+", reminder="+(IsDismissed ? "<dismissed>" : NextReminderTime.ToString())+(IsCancelled ? ", status=<cancelled>" : "")+", subject="+Subject+">";
+                ? $"DeletedMeeting<subject={Subject}>"
+                : $"Meeting<start={StartTime}, end={EndTime}, reminder={(IsDismissed ? "<dismissed>" : NextReminderTime.ToString())}{(IsCancelled ? ", status=<cancelled>" : "")}, subject={Subject}>";
         }
 
         /// Checks if this item has been modified, and updates all relevant fields if it has.
@@ -132,7 +132,7 @@ namespace BetterReminders
                 EndTime = OutlookItem.End;
                 subject = OutlookItem.Subject;
                 IsCancelled = IsAppointmentCancelled(OutlookItem);
-                logger.Info("Item was changed by Outlook at " + lastModificationTime + ": " + this);
+                logger.Info($"Item was changed by Outlook at {lastModificationTime}: {this}");
                 return result;
             }
             else

@@ -41,16 +41,18 @@ namespace BetterReminders
             nameLabel.Text = meeting.Subject;
             extraInfoLabel.Text = "";
             if (meeting.Location.Length > 0)
-                extraInfoLabel.Text = "Location: " + meeting.Location + "; ";
-            extraInfoLabel.Text += "Duration " + meeting.OutlookItem.Duration + " mins";
+                extraInfoLabel.Text = $"Location: {meeting.Location}; ";
+            extraInfoLabel.Text += $"Duration {meeting.OutlookItem.Duration} mins";
 
-            if (meeting.getOrganizer() != null)
-                extraInfoLabel.Text += "; organizer: " + meeting.getOrganizer();
+            string organizers = meeting.getOrganizer();
+            if (organizers != null)
+                extraInfoLabel.Text += $"; organizer: {organizers}";
+
             IEnumerable<string> attendees = meeting.GetAttendees();
             if (attendees.Count() == 1)
-                extraInfoLabel.Text += "; with: " + string.Join(", ", attendees);
+                extraInfoLabel.Text += $"; with: {string.Join(", ", attendees)}";
             else
-                extraInfoLabel.Text += "; " + attendees.Count() + " attendees";
+                extraInfoLabel.Text += $"; {attendees.Count()} attendees";
             extraInfoLabel.Text += "";
 
             toolTip.SetToolTip(nameLabel, nameLabel.Text); // in case it's too long
@@ -102,7 +104,7 @@ namespace BetterReminders
                 spanstr += span.ToString("h\\:mm\\:ss");
             else
                 spanstr += span.ToString("m\\:ss");
-            startTimeLabel.Text = "Starting at " + string.Format("{0:t}", meeting.StartTime) + ", "+spanstr;
+            startTimeLabel.Text = $"Starting at {meeting.StartTime:t}, {spanstr}";
         }
 
         private void timer_Tick(object sender, EventArgs e)
@@ -110,7 +112,7 @@ namespace BetterReminders
             updateStartTime();
             // keep this dialog around for a bit so people can apologise if they've forgotten a meeting,
             // but 2 hours after the meeting ends give up
-            if (DateTime.Now > meeting.EndTime + new TimeSpan(2, 0, 0))
+            if (DateTime.Now > meeting.EndTime.AddHours(2))
                 Close();
             else if (DateTime.Now > reactivateTime)
             {
@@ -121,7 +123,6 @@ namespace BetterReminders
                 WindowState = FormWindowState.Normal;
                 Activate();
                 //SetForegroundWindow(this.Handle);
-
             }
         }
 
@@ -144,7 +145,7 @@ namespace BetterReminders
                 Close();
         }
 
-        private void snooze(string snoozeTime, bool record=true)
+        private void snooze(string snoozeTime, bool record = true)
         {
             SnoozeTime st;
             DateTime wakeup;
@@ -156,10 +157,10 @@ namespace BetterReminders
                     throw new Exception("Reminder time is in the past");
             } catch (Exception e)
             {
-                MessageBox.Show(this, "Cannot follow snooze instruction '" + snoozeTime + "': " + e.Message, "Invalid Snooze", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(this, $"Cannot follow snooze instruction '{snoozeTime}': {e.Message}", "Invalid Snooze", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
-            logger.Info("Snooze time "+st+" -> reminder time is: "+wakeup);
+            logger.Info($"Snooze time {st} -> reminder time is: {wakeup}");
 
             // record the snoozeTime MRU
             var list = SnoozeTime.ParseList(Settings.Default.mruSnoozeTimes);
@@ -186,7 +187,7 @@ namespace BetterReminders
         private DateTime reactivateTime = DateTime.MaxValue;
         // long enough to finish what you're doing, but not to make you too late for the meeting
         // could make this configurable
-        private readonly TimeSpan reactivateTimeSpan = new TimeSpan(0, 0, 45);
+        private readonly TimeSpan reactivateTimeSpan = TimeSpan.FromSeconds(45);
         private void ReminderForm_Resize(object sender, EventArgs e)
         {
             if (WindowState == FormWindowState.Minimized)

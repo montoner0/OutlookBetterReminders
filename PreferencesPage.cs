@@ -34,10 +34,10 @@ namespace BetterReminders
                 {
                     Regex re = new Regex(meetingregex);
                     if (!re.GetGroupNames().Contains("url"))
-                        throw new Exception("The meeting regex must include a regex group named 'url' e.g. '"+UpcomingMeeting.DefaultMeetingUrlRegex+"'");
+                        throw new Exception($"The meeting regex must include a regex group named 'url' e.g. '{UpcomingMeeting.DefaultMeetingUrlRegex}'");
                 } catch (Exception e)
                 {
-                    string msg = "Invalid meeting URL regex: "+e.Message;
+                    string msg = $"Invalid meeting URL regex: {e.Message}";
                     MessageBox.Show(msg, "Invalid Meeting URL Regex", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     throw new Exception(msg, e); // stops isDirty being changed
                 }
@@ -50,7 +50,7 @@ namespace BetterReminders
                 }
                 catch (Exception e)
                 {
-                    string msg = "Invalid subject exclude regex: " + e.Message;
+                    string msg = $"Invalid subject exclude regex: {e.Message}";
                     MessageBox.Show(msg, "Invalid Subject Exclude Regex", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     throw new Exception(msg, e); // stops isDirty being changed
                 }
@@ -60,12 +60,15 @@ namespace BetterReminders
             if (reminderSound != "" && reminderSound != "(default)" &&
                 !System.IO.File.Exists(reminderSound))
             {
-                MessageBox.Show("Reminder .wav path does not exist. Provide a valid .wav path, empty string or (default).", "Invalid BetterReminders settings", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Reminder .wav path does not exist. Provide a valid .wav path, empty string or (default).",
+                                "Invalid BetterReminders settings",
+                                MessageBoxButtons.OK,
+                                MessageBoxIcon.Error);
                 throw new Exception("BetterReminders got invalid input"); // stops isDirty being changed
             }
 
             Settings.Default.defaultReminderSecs = decimal.ToInt32(defaultReminderTimeSecs.Value);
-            Settings.Default.searchFrequencySecs = decimal.ToInt32(searchFrequencyMins.Value)*60;
+            Settings.Default.searchFrequencySecs = decimal.ToInt32(searchFrequencyMins.Value) * 60;
             Settings.Default.playSoundOnReminder = reminderSound;
             Settings.Default.meetingUrlRegex = meetingregex;
             Settings.Default.subjectExcludeRegex = subjectexcluderegex;
@@ -81,18 +84,16 @@ namespace BetterReminders
 
         private void valueChanged(object sender, EventArgs e)
         {
-            if (propertyPageSite == null) return; // still loading
-
-            if (isDirty) return; //already called
+            if (propertyPageSite == null || isDirty) return; // still loading or already called
 
             isDirty = true;
             propertyPageSite.OnStatusChange();
         }
 
-        Outlook.PropertyPageSite GetPropertyPageSite()
+        private Outlook.PropertyPageSite GetPropertyPageSite()
         {
             // this is what MS's documentation recommends, but doesn't seem to work as Parent is null
-            if (Parent is Outlook.PropertyPageSite) return (Outlook.PropertyPageSite)Parent;
+            if (Parent is Outlook.PropertyPageSite propertyPageSite2) return propertyPageSite2;
 
             // nb: I can't believe this hack is really required, but since Parent=null
             // I can't find any better way to do it
@@ -106,9 +107,8 @@ namespace BetterReminders
 
             Type oleObj = unsafeNativeMethods.GetNestedType("IOleObject");
             MethodInfo methodInfo = oleObj.GetMethod("GetClientSite");
-            object propertyPageSite = methodInfo.Invoke(this, null);
 
-            return (Outlook.PropertyPageSite)propertyPageSite;
+            return methodInfo.Invoke(this, null) as Outlook.PropertyPageSite;
         }
 
         private void PreferencesPage_Load(object sender, EventArgs e)
