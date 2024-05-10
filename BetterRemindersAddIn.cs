@@ -10,9 +10,10 @@ using System.Windows.Forms;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Configuration;
+using BetterReminders.Properties;
 
 
-// Copyright (c) 2016-2019 Ben Spiller. 
+// Copyright (c) 2016-2019 Ben Spiller.
 
 /*
  * Futures:
@@ -21,19 +22,19 @@ using System.Configuration;
  * Configure different default reminder times based on location, organiser
  * Use a user-defined property in an appointment (and maybe Outlook's reminder) to override the default reminder time
  * Allow remembering reminder time for recurring appointments in settings
- * Include meetings already in-progress when Outlook is started (not sure how useful this is) 
- * 
+ * Include meetings already in-progress when Outlook is started (not sure how useful this is)
+ *
  */
 namespace BetterReminders
 {
 
 	/// <summary>
-	/// A plug-in that uses a timer to regularly check for meetings starting in the next few minutes, and 
-	/// for each one displays a form from which user can open the item or snooze. 
+	/// A plug-in that uses a timer to regularly check for meetings starting in the next few minutes, and
+	/// for each one displays a form from which user can open the item or snooze.
 	/// </summary>
 	/// <remarks>
-	/// Theading: everything happens on the UI thread (there isn't enough work to justify a background thread), 
-	/// therefore no locking is required for our data structures, Outlook's can be accessed without locking overheads. 
+	/// Theading: everything happens on the UI thread (there isn't enough work to justify a background thread),
+	/// therefore no locking is required for our data structures, Outlook's can be accessed without locking overheads.
 	/// </remarks>
 	public partial class BetterRemindersAddIn
 	{
@@ -46,8 +47,8 @@ namespace BetterReminders
 		private System.Media.SoundPlayer soundPlayer;
 
 		/// <summary>
-		/// A list of upcoming meetings we know about already, and the time of the next reminder for each one 
-		/// (or null if dismissed). Items are expired from this list 
+		/// A list of upcoming meetings we know about already, and the time of the next reminder for each one
+		/// (or null if dismissed). Items are expired from this list
 		/// </summary>
 		private Dictionary<string, UpcomingMeeting> upcoming = new Dictionary<string, UpcomingMeeting>();
 
@@ -61,8 +62,8 @@ namespace BetterReminders
 		#region constants
 
 		/// <summary>
-		/// The period of time this plug-in will sleep between checking if there are any upcoming meetings. 
-		/// Don't do it so often that responsiveness is reduced, but do it often enough we have a good chance of 
+		/// The period of time this plug-in will sleep between checking if there are any upcoming meetings.
+		/// Don't do it so often that responsiveness is reduced, but do it often enough we have a good chance of
 		/// picking up late new/changed invites
 		/// </summary>
 		private TimeSpan SleepInterval { get { return new TimeSpan(0, 0, Properties.Settings.Default.searchFrequencySecs); } }
@@ -99,11 +100,11 @@ namespace BetterReminders
 			// first update existing items in case there were any changes
 			foreach (UpcomingMeeting m in upcoming.Values)
 			{
-				// if start date was changed in either direction we should recalculate 
+				// if start date was changed in either direction we should recalculate
 				// the reminder - might need a notification sooner,
-				// or if the meeting was postponed then later. 
-				// always resetting to defaultremindertime is the safest/most conservative 
-				// option since it gives maximum opportunity for the user to decide 
+				// or if the meeting was postponed then later.
+				// always resetting to defaultremindertime is the safest/most conservative
+				// option since it gives maximum opportunity for the user to decide
 				// whether to defer the meeting
 				if (m.UpdateStartTime())
 				{
@@ -112,11 +113,11 @@ namespace BetterReminders
 				}
 			}
 
-			// add in any new meetings we're not aware of yet that will start or need to be reminded about in the 
+			// add in any new meetings we're not aware of yet that will start or need to be reminded about in the
 			// next sleep interval, ignoring any that have ended already
 			// this filter is conservative - must not miss any items, but is ok if it contains some extra ones
 
-			// we use lastMeetingSearchTime as the lower bound to avoid missing stuff, but give up and just 
+			// we use lastMeetingSearchTime as the lower bound to avoid missing stuff, but give up and just
 			// do it from 'now' onwards if we haven't checked for a day or more, since it's too late anyway by then
 			if (now - lastMeetingSearchTime > OneDay)
 				lastMeetingSearchTime = now;
@@ -163,7 +164,7 @@ namespace BetterReminders
 					upcoming.Add(item.EntryID, new UpcomingMeeting(item, item.Start - DefaultReminderTime));
 			}
 
-			// finally, expire any meetings that have ended (we can't expire items until they definitely 
+			// finally, expire any meetings that have ended (we can't expire items until they definitely
 			// won't show up in the above filter otherwise we might end up re-adding dismissed reminders)
 			// probably safe to expire them even if not dismissed, if they've ended
 			var expired = new List<string>(upcoming.Values.Where(e => (e.EndTime < now) || e.IsDeleted).Select(e => e.ID));
@@ -177,7 +178,7 @@ namespace BetterReminders
 		}
 
 		/// <summary>
-		/// Get the regex for excluding based on subject, or null if none. 
+		/// Get the regex for excluding based on subject, or null if none.
 		/// </summary>
 		/// <returns></returns>
 		private Regex getSubjectExcludeRegex()
@@ -187,7 +188,7 @@ namespace BetterReminders
 		}
 
 		/// <summary>
-		/// Called when the timer wakes up or when a reminder form has been closed to work out 
+		/// Called when the timer wakes up or when a reminder form has been closed to work out
 		/// what to do next
 		/// </summary>
 		private void waitOrRemind()
@@ -219,7 +220,7 @@ namespace BetterReminders
 						ReminderForm form = new ReminderForm(next);
 						form.FormClosed += ReminderFormClosedEventHandler;
 						form.Show();
-						// timers etc are disabled until the current window has been closed - 
+						// timers etc are disabled until the current window has been closed -
 						// simpler to manage and avoids getting a million popups if you leave it running while on vacation
 						return;
 					}
@@ -255,15 +256,22 @@ namespace BetterReminders
 			logger.Debug("Settings are under: " + ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.PerUserRoamingAndLocal).FilePath);
 
 			Globals.BetterRemindersAddIn.Application.OptionsPagesAdd += new Outlook.ApplicationEvents_11_OptionsPagesAddEventHandler(Application_OptionsPagesAdd);
-			
+
 			// wait a bit before doing anything, to give outlook a chance to finish starting
 			myTimer.Tick += new EventHandler(TimerEventProcessor);
 			myTimer.Interval = StartupDelaySecs * 10;
 			myTimer.Start();
 			nextPlannedWakeup = DateTime.Now + new TimeSpan(0, 0, 0, 0, myTimer.Interval);
 
+            if (Settings.Default.upgradeSettings) {
+                Settings.Default.Upgrade();
+                Settings.Default.upgradeSettings = false;
+                Settings.Default.Save();
+                Settings.Default.Reload();
+            }
+
 			// init sound player if necessary
-			if (Properties.Settings.Default.playSoundOnReminder != "" && Properties.Settings.Default.playSoundOnReminder != "(default)")
+            if (Properties.Settings.Default.playSoundOnReminder != "" && Properties.Settings.Default.playSoundOnReminder != "(default)")
 				try
 				{
 					soundPlayer = new System.Media.SoundPlayer(Properties.Settings.Default.playSoundOnReminder);
@@ -345,7 +353,7 @@ namespace BetterReminders
 				if (meeting.GetMeetingUrl() != "")
 					logger.Debug("Extracted meeting URL from '"+meeting.Subject+"': '"+meeting.GetMeetingUrl()+"'");
 				else if (meeting.Body.Trim() != "")
-				{ 
+				{
 					// This is a bit verbose but may be needed sometimes for debugging URL regexes (at least until we build a proper UI for that task)
 					logger.Info("No meeting URL found in '" + meeting.Subject + "': \n-------------------------------------\n" + meeting.Body+ "\n-------------------------------------\n");
 				}
