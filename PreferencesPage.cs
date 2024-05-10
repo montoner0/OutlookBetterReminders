@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
+using BetterReminders.Properties;
 using Outlook = Microsoft.Office.Interop.Outlook;
 
 // Copyright (c) 2016-2017, 2019 Ben Spiller.
@@ -62,12 +64,12 @@ namespace BetterReminders
                 throw new Exception("BetterReminders got invalid input"); // stops isDirty being changed
             }
 
-            Properties.Settings.Default.defaultReminderSecs = decimal.ToInt32(defaultReminderTimeSecs.Value);
-            Properties.Settings.Default.searchFrequencySecs = decimal.ToInt32(searchFrequencyMins.Value)*60;
-            Properties.Settings.Default.playSoundOnReminder = reminderSound;
-            Properties.Settings.Default.meetingUrlRegex = meetingregex;
-            Properties.Settings.Default.subjectExcludeRegex = subjectexcluderegex;
-            Properties.Settings.Default.Save();
+            Settings.Default.defaultReminderSecs = decimal.ToInt32(defaultReminderTimeSecs.Value);
+            Settings.Default.searchFrequencySecs = decimal.ToInt32(searchFrequencyMins.Value)*60;
+            Settings.Default.playSoundOnReminder = reminderSound;
+            Settings.Default.meetingUrlRegex = meetingregex;
+            Settings.Default.subjectExcludeRegex = subjectexcluderegex;
+            Settings.Default.Save();
             isDirty = false;
         }
 
@@ -99,11 +101,11 @@ namespace BetterReminders
             string assembly = type.Assembly.CodeBase.Replace("mscorlib.dll", "System.Windows.Forms.dll");
             assembly = assembly.Replace("file:///", "");
 
-            string assemblyName = System.Reflection.AssemblyName.GetAssemblyName(assembly).FullName;
-            Type unsafeNativeMethods = Type.GetType(System.Reflection.Assembly.CreateQualifiedName(assemblyName, "System.Windows.Forms.UnsafeNativeMethods"));
+            string assemblyName = AssemblyName.GetAssemblyName(assembly).FullName;
+            Type unsafeNativeMethods = Type.GetType(Assembly.CreateQualifiedName(assemblyName, "System.Windows.Forms.UnsafeNativeMethods"));
 
             Type oleObj = unsafeNativeMethods.GetNestedType("IOleObject");
-            System.Reflection.MethodInfo methodInfo = oleObj.GetMethod("GetClientSite");
+            MethodInfo methodInfo = oleObj.GetMethod("GetClientSite");
             object propertyPageSite = methodInfo.Invoke(this, null);
 
             return (Outlook.PropertyPageSite)propertyPageSite;
@@ -113,18 +115,18 @@ namespace BetterReminders
         {
             try
             {
-                defaultReminderTimeSecs.Value = Properties.Settings.Default.defaultReminderSecs;
-                searchFrequencyMins.Value = Math.Max(1, Math.Min(Properties.Settings.Default.searchFrequencySecs/60, searchFrequencyMins.Maximum));
-                reminderSoundPath.Text = Properties.Settings.Default.playSoundOnReminder;
+                defaultReminderTimeSecs.Value = Settings.Default.defaultReminderSecs;
+                searchFrequencyMins.Value = Math.Max(1, Math.Min(Settings.Default.searchFrequencySecs/60, searchFrequencyMins.Maximum));
+                reminderSoundPath.Text = Settings.Default.playSoundOnReminder;
 
                 // provide default in case user forgets
                 meetingUrlRegex.Items.Add(UpcomingMeeting.DefaultMeetingUrlRegex);
 
-                meetingUrlRegex.Text = Properties.Settings.Default.meetingUrlRegex;
+                meetingUrlRegex.Text = Settings.Default.meetingUrlRegex;
                 if (string.IsNullOrWhiteSpace(meetingUrlRegex.Text))
                     meetingUrlRegex.Text = UpcomingMeeting.DefaultMeetingUrlRegex;
 
-                subjectExcludeRegex.Text = Properties.Settings.Default.subjectExcludeRegex;
+                subjectExcludeRegex.Text = Settings.Default.subjectExcludeRegex;
 
                 propertyPageSite = GetPropertyPageSite();
                 logger.Info("Successfully loaded preferences page");

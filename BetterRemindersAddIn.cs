@@ -35,7 +35,7 @@ namespace BetterReminders
         private static Logger logger = Logger.GetLogger();
 
         private DateTime nextPlannedWakeup;
-        private System.Windows.Forms.Timer myTimer = new System.Windows.Forms.Timer();
+        private Timer myTimer = new Timer();
 
         private System.Media.SoundPlayer soundPlayer;
 

@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
+using BetterReminders.Properties;
 
 // Copyright (c) 2016 Ben Spiller.
 
@@ -64,7 +65,7 @@ namespace BetterReminders
             // reminder times list. stored in MRU order but sorted in time order
             timeList.Items.Clear();
 
-            var list = SnoozeTime.ParseList(Properties.Settings.Default.mruSnoozeTimes);
+            var list = SnoozeTime.ParseList(Settings.Default.mruSnoozeTimes);
             if (list.Count == 0)
             {
                 // initialize default list of snooze times
@@ -73,8 +74,8 @@ namespace BetterReminders
                 list.Add(new SnoozeTime(30, true));
                 list.Add(new SnoozeTime(60, true));
                 list.Add(new SnoozeTime(60 * 5, true));
-                Properties.Settings.Default.mruSnoozeTimes = SnoozeTime.ListToString(list);
-                Properties.Settings.Default.Save();
+                Settings.Default.mruSnoozeTimes = SnoozeTime.ListToString(list);
+                Settings.Default.Save();
             }
             list.Sort();
             list.ForEach(st => timeList.Items.Add(st));
@@ -161,12 +162,12 @@ namespace BetterReminders
             logger.Info("Snooze time "+st+" -> reminder time is: "+wakeup);
 
             // record the snoozeTime MRU
-            var list = SnoozeTime.ParseList(Properties.Settings.Default.mruSnoozeTimes);
+            var list = SnoozeTime.ParseList(Settings.Default.mruSnoozeTimes);
             list.Remove(st);
             list.Insert(0, st);
             while (list.Count > 5) list.RemoveAt(list.Count - 1);
-            Properties.Settings.Default.mruSnoozeTimes = SnoozeTime.ListToString(list);
-            Properties.Settings.Default.Save();
+            Settings.Default.mruSnoozeTimes = SnoozeTime.ListToString(list);
+            Settings.Default.Save();
 
             meeting.NextReminderTime = wakeup;
             Close();
