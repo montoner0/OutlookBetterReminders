@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Linq;
-using System.Windows.Forms;
-
 using System.Runtime.InteropServices;
-using Outlook = Microsoft.Office.Interop.Outlook;
 using System.Text.RegularExpressions;
+using System.Windows.Forms;
+using Outlook = Microsoft.Office.Interop.Outlook;
 
 // Copyright (c) 2016-2017, 2019 Ben Spiller.
 

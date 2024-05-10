@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Outlook = Microsoft.Office.Interop.Outlook;
 using System.Text.RegularExpressions;
+using Outlook = Microsoft.Office.Interop.Outlook;
 
 // Copyright (c) 2016-2021 Ben Spiller.
 

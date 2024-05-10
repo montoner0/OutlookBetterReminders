@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using Outlook = Microsoft.Office.Interop.Outlook;
-using System.Windows.Forms;
-using System.Text.RegularExpressions;
 using System.Configuration;
+using System.Linq;
+using System.Text.RegularExpressions;
+using System.Windows.Forms;
 using BetterReminders.Properties;
+using Outlook = Microsoft.Office.Interop.Outlook;
 
 // Copyright (c) 2016-2019 Ben Spiller.
 
