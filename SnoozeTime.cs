@@ -34,26 +34,26 @@ namespace BetterReminders
             return (FromNow ? DateTime.Now : startTime).AddSeconds(Secs);
         }
 
-        public static SnoozeTime Parse(string t)
+        public static SnoozeTime Parse(string snoozeTime)
         {
-            Match m = new Regex(@"([\d.]+) *([s|h|m])").Match(t.ToLowerInvariant());
+            Match m = Regex.Match(snoozeTime, @"([\d.]+) *(s|h|m)", RegexOptions.IgnoreCase);
             if (!m.Success)
-                throw new ArgumentException($"Invalid snooze time '{t}': must contain <number> s|m|h");
+                throw new ArgumentException($"Invalid snooze time '{snoozeTime}': must contain <number> s|m|h");
 
-            bool fromNow = !(t.IndexOf("start", StringComparison.InvariantCultureIgnoreCase) >= 0
-                             || t.IndexOf("after", StringComparison.InvariantCultureIgnoreCase) >= 0
-                             || t.IndexOf("before", StringComparison.InvariantCultureIgnoreCase) >= 0);
-            float secs = float.Parse(m.Groups[1].Value);
-            switch (m.Groups[2].Value)
-            {
+            bool startTimeRelative = new[] { "start", "after", "before" }.Any(s => snoozeTime.IndexOf(s, StringComparison.InvariantCultureIgnoreCase) >= 0);
+            bool fromNow = !startTimeRelative;
+
+            float secs = float.Parse(m.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture);
+            switch (m.Groups[2].Value) {
                 case "m": secs *= 60; break;
                 case "h": secs *= 60 * 60; break;
                 case "s": break;
             }
             if (secs < 1)
-                throw new ArgumentException("Invalid snooze time, must be non-zero");
-            if (t.IndexOf("after", StringComparison.InvariantCultureIgnoreCase) < 0 && !fromNow)
+                throw new ArgumentException("Invalid snooze time, must be positive");
+            if (snoozeTime.IndexOf("after", StringComparison.InvariantCultureIgnoreCase) < 0 && startTimeRelative)
                 secs = -secs;
+
             return new SnoozeTime(Convert.ToInt32(secs), fromNow);
         }
 
@@ -66,8 +66,8 @@ namespace BetterReminders
                 ? $"{absSecs / 60} minute{(absSecs == 60 ? "" : "s")}"
                 : $"{absSecs} second{(absSecs == 1 ? "" : "s")}";
             t = FromNow
-                ? "Remind in " + t
-                : $"Remind {t}{(Secs < 0 ? " before start time" : " after start time")}";
+                ? $"Remind in {t}"
+                : $"Remind {t} {(Secs < 0 ? "before start time" : "after start time")}";
             // sanity check assertion
             return Parse(t).Equals(this) ? t : throw new Exception($"Error in snooze time ToString/Parse for: {t}");
         }
@@ -86,11 +86,11 @@ namespace BetterReminders
 
         public int CompareTo(SnoozeTime other)
         {
-            // fromnow items first
-            if (FromNow != other.FromNow)
-                return FromNow ? +1 : -1;
-            // small/earlier last, far times and start times at top of list
-            return other.Secs - Secs;
+            return FromNow == other.FromNow
+                // small/earlier last, far times and start times at top of list
+                ? other.Secs - Secs
+                // fromnow items first
+                : FromNow ? +1 : -1;
         }
 
         #endregion
