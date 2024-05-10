@@ -59,9 +59,9 @@ namespace BetterReminders
         /// Don't do it so often that responsiveness is reduced, but do it often enough we have a good chance of
         /// picking up late new/changed invites
         /// </summary>
-        private TimeSpan SleepInterval { get { return new TimeSpan(0, 0, Properties.Settings.Default.searchFrequencySecs); } }
+        private TimeSpan SleepInterval => new TimeSpan(0, 0, Settings.Default.searchFrequencySecs);
 
-        private TimeSpan DefaultReminderTime { get { return new TimeSpan(0, 0, Properties.Settings.Default.defaultReminderSecs); } }
+        private TimeSpan DefaultReminderTime => new TimeSpan(0, 0, Settings.Default.defaultReminderSecs);
 
         /// <summary>
         /// Wait a bit before doing anything, to give outlook a chance to finish starting and improve responsiveness
@@ -174,8 +174,8 @@ namespace BetterReminders
         /// <returns></returns>
         private Regex getSubjectExcludeRegex()
         {
-            return Properties.Settings.Default.subjectExcludeRegex == "" ? null : new Regex(
-                Properties.Settings.Default.subjectExcludeRegex, RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(1));
+            return Settings.Default.subjectExcludeRegex == "" ? null : new Regex(
+                Settings.Default.subjectExcludeRegex, RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(1));
         }
 
         /// <summary>
@@ -248,7 +248,7 @@ namespace BetterReminders
             Globals.BetterRemindersAddIn.Application.OptionsPagesAdd += new Outlook.ApplicationEvents_11_OptionsPagesAddEventHandler(Application_OptionsPagesAdd);
 
             // wait a bit before doing anything, to give outlook a chance to finish starting
-            myTimer.Tick += new EventHandler(TimerEventProcessor);
+            myTimer.Tick += TimerEventProcessor;
             myTimer.Interval = StartupDelaySecs * 10;
             myTimer.Start();
             nextPlannedWakeup = DateTime.Now + new TimeSpan(0, 0, 0, 0, myTimer.Interval);
@@ -261,10 +261,10 @@ namespace BetterReminders
             }
 
             // init sound player if necessary
-            if (Properties.Settings.Default.playSoundOnReminder != "" && Properties.Settings.Default.playSoundOnReminder != "(default)")
+            if (Settings.Default.playSoundOnReminder != "" && Settings.Default.playSoundOnReminder != "(default)")
                 try
                 {
-                    soundPlayer = new System.Media.SoundPlayer(Properties.Settings.Default.playSoundOnReminder);
+                    soundPlayer = new System.Media.SoundPlayer(Settings.Default.playSoundOnReminder);
                     soundPlayer.Load();
                 }
                 catch (Exception ex)
@@ -290,9 +290,9 @@ namespace BetterReminders
             logger.Shutdown();
         }
 
-        private Boolean delayedStartupTasksExecuted = false;
+        private bool delayedStartupTasksExecuted;
 
-        private void TimerEventProcessor(Object myObject, EventArgs myEventArgs)
+        private void TimerEventProcessor(object myObject, EventArgs myEventArgs)
         {
             myTimer.Stop();
             logger.Debug("Timer triggered at " + DateTime.Now + " (late by " + Math.Round((DateTime.Now - nextPlannedWakeup).TotalSeconds) + "s)");
@@ -360,7 +360,7 @@ namespace BetterReminders
 
         private void playReminderSound()
         {
-            if (Properties.Settings.Default.playSoundOnReminder == "(default)")
+            if (Settings.Default.playSoundOnReminder == "(default)")
                 System.Media.SystemSounds.Asterisk.Play();
             else if (soundPlayer != null)
                 soundPlayer.Play();
@@ -374,8 +374,8 @@ namespace BetterReminders
         /// </summary>
         private void InternalStartup()
         {
-            this.Startup += new System.EventHandler(ThisAddIn_Startup);
-            this.Shutdown += new System.EventHandler(ThisAddIn_Shutdown);
+            Startup += ThisAddIn_Startup;
+            Shutdown += ThisAddIn_Shutdown;
         }
 
         #endregion

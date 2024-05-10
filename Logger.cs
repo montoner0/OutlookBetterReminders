@@ -14,12 +14,12 @@ namespace BetterReminders
     ///
     /// Currently the log level is not configurable, but as we wipe the log on startup we should never generate enough output to be a problem.
     /// </summary>
-    class Logger
+    sealed class Logger
     {
         public static Logger GetLogger() { return instance; }
 
         private static Logger instance = new Logger();
-        private StreamWriter sw = null;
+        private StreamWriter sw;
         private Logger()
         {
             try
@@ -44,7 +44,7 @@ namespace BetterReminders
 
         public void Error(string msg, Exception ex)
         {
-            log("ERROR", msg + ex.ToString() + "\n" + ex.StackTrace);
+            log("ERROR", msg + "\n" + ex);
         }
         public void Error(string msg)
         {
@@ -60,10 +60,7 @@ namespace BetterReminders
             log("DEBUG", msg);
         }
 
-        public Boolean Enabled
-        {
-            get { return sw != null; }
-        }
+        public bool Enabled => sw != null;
 
         private void log(string level, string msg)
         {

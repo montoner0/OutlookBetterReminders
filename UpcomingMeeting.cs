@@ -26,7 +26,7 @@ namespace BetterReminders
         /// </summary>
         public DateTime NextReminderTime = DateTime.MaxValue;
 
-        public bool IsDismissed { get { return NextReminderTime == DateTime.MaxValue; } }
+        public bool IsDismissed => NextReminderTime == DateTime.MaxValue;
 
         public void Dismiss() { NextReminderTime = DateTime.MaxValue; }
 
@@ -38,13 +38,13 @@ namespace BetterReminders
         public bool IsCancelled;
 
         private string id;
-        public string ID { get { return id; } }
+        public string ID => id;
 
         private string subject;
-        public string Subject { get { return subject ?? "<no subject>"; } }
+        public string Subject => subject ?? "<no subject>";
 
-        public string Location { get { return OutlookItem.Location ?? ""; } }
-        public string Body { get { return OutlookItem.Body ?? ""; } }
+        public string Location => OutlookItem.Location ?? "";
+        public string Body => OutlookItem.Body ?? "";
 
         // works for webex, lync, zoom and MSTeams invites.
         // First hyperlink syntax is for Office 365, 2nd ("HYPERLINK") syntax is for Office 2010. Both of these work on MSTeams in English and probably many others too.
@@ -57,7 +57,7 @@ namespace BetterReminders
             string regexSetting = Properties.Settings.Default.meetingUrlRegex;
             try
             {
-                if (String.IsNullOrWhiteSpace(regexSetting))
+                if (string.IsNullOrWhiteSpace(regexSetting))
                     re = new Regex(DefaultMeetingUrlRegex, RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(1));
                 else
                     re = new Regex(regexSetting, RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(1));
@@ -107,7 +107,7 @@ namespace BetterReminders
             lastModificationTime = OutlookItem.LastModificationTime;
         }
 
-        public bool IsDeleted { get { return deleted; } }
+        public bool IsDeleted => deleted;
         private bool deleted;
         private void item_BeforeDelete(object Item, ref bool Cancel)
         {

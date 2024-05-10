@@ -77,7 +77,7 @@ namespace BetterReminders
 
         public static List<SnoozeTime> ParseList(string list)
         {
-            return new List<SnoozeTime>(list.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries).Select(t => SnoozeTime.Parse(t)));
+            return new List<SnoozeTime>(list.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries).Select(t => Parse(t)));
         }
 
         public static string ListToString(List<SnoozeTime> list)

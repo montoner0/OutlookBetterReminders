@@ -21,7 +21,7 @@ namespace BetterReminders
             InitializeComponent();
         }
 
-        bool isDirty = false;
+        bool isDirty;
         void Outlook.PropertyPage.Apply()
         {
             string meetingregex = meetingUrlRegex.Text;
@@ -63,8 +63,8 @@ namespace BetterReminders
                 throw new Exception("BetterReminders got invalid input"); // stops isDirty being changed
             }
 
-            Properties.Settings.Default.defaultReminderSecs = Decimal.ToInt32(defaultReminderTimeSecs.Value);
-            Properties.Settings.Default.searchFrequencySecs = Decimal.ToInt32(searchFrequencyMins.Value)*60;
+            Properties.Settings.Default.defaultReminderSecs = decimal.ToInt32(defaultReminderTimeSecs.Value);
+            Properties.Settings.Default.searchFrequencySecs = decimal.ToInt32(searchFrequencyMins.Value)*60;
             Properties.Settings.Default.playSoundOnReminder = reminderSound;
             Properties.Settings.Default.meetingUrlRegex = meetingregex;
             Properties.Settings.Default.subjectExcludeRegex = subjectexcluderegex;
@@ -72,13 +72,7 @@ namespace BetterReminders
             isDirty = false;
         }
 
-        bool Outlook.PropertyPage.Dirty
-        {
-            get
-            {
-                return isDirty;
-            }
-        }
+        bool Outlook.PropertyPage.Dirty => isDirty;
         void Outlook.PropertyPage.GetPageInfo(ref string helpFile, ref int helpContext)
         {
             // nothing to do here
@@ -102,7 +96,7 @@ namespace BetterReminders
             // nb: I can't believe this hack is really required, but since Parent=null
             // I can't find any better way to do it
 
-            Type type = typeof(System.Object);
+            Type type = typeof(object);
             string assembly = type.Assembly.CodeBase.Replace("mscorlib.dll", "System.Windows.Forms.dll");
             assembly = assembly.Replace("file:///", "");
 

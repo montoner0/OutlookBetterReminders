@@ -26,7 +26,7 @@ namespace BetterReminders
         public ReminderForm(UpcomingMeeting meeting)
         {
             this.meeting = meeting;
-            this.joinUrl = meeting.GetMeetingUrl();
+            joinUrl = meeting.GetMeetingUrl();
             InitializeComponent();
 
             // populate the combo with a hardcoded list of items whose primary purpose is to illustrate the
@@ -106,7 +106,7 @@ namespace BetterReminders
                 spanstr += span.ToString("h\\:mm\\:ss");
             else
                 spanstr += span.ToString("m\\:ss");
-            startTimeLabel.Text = "Starting at " + String.Format("{0:t}", meeting.StartTime) + ", "+spanstr;
+            startTimeLabel.Text = "Starting at " + string.Format("{0:t}", meeting.StartTime) + ", "+spanstr;
         }
 
         private void timer_Tick(object sender, EventArgs e)
