@@ -139,10 +139,9 @@ namespace BetterReminders
 
         private void reminderSoundBrowse_Click(object sender, EventArgs e)
         {
-            if (reminderSoundPath.Text.StartsWith("("))
-                reminderSoundBrowseDialog.FileName = "";
-            else
-                reminderSoundBrowseDialog.FileName = reminderSoundPath.Text;
+            reminderSoundBrowseDialog.FileName = reminderSoundPath.Text.StartsWith("(")
+                ? ""
+                : reminderSoundPath.Text;
             if (reminderSoundBrowseDialog.ShowDialog(ParentForm) == DialogResult.OK)
                 reminderSoundPath.Text = reminderSoundBrowseDialog.FileName;
         }

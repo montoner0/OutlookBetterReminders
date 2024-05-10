@@ -114,11 +114,11 @@ namespace BetterReminders
                 lastMeetingSearchTime = now;
 
             Outlook.Items calItems = findCalendarItems(
-                "[Start] >= '" + (lastMeetingSearchTime).ToString("g") + "'"
-                + " AND [Start] <= '" + (now + SleepInterval + DefaultReminderTime).ToString("g") + "'"
-                + " AND [End] >= '" + (now).ToString("g") + "'"
+                $"[Start] >= '{lastMeetingSearchTime:g}'"
+                + $" AND [Start] <= '{now + SleepInterval + DefaultReminderTime:g}'"
+                + $" AND [End] >= '{now:g}'"
                 // not really necessary but
-                + " AND [End] <= '" + (now + OneDay).ToString("g") + "'"
+                + $" AND [End] <= '{now + OneDay:g}'"
                 );
 
             // next time we'll monitor from now on

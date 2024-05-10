@@ -31,9 +31,9 @@ namespace BetterReminders
 
         public DateTime GetNextReminderTime(DateTime startTime)
         {
-            if (FromNow)
-                return DateTime.Now + new TimeSpan(0, 0, Secs);
-            return startTime + new TimeSpan(0, 0, Secs);
+            return FromNow
+                ? DateTime.Now + new TimeSpan(0, 0, Secs)
+                : startTime + new TimeSpan(0, 0, Secs);
         }
 
         public static SnoozeTime Parse(string t)
@@ -61,18 +61,14 @@ namespace BetterReminders
             string t;
             int absSecs = (Secs > 0) ? Secs : -1 * Secs;
 
-            if (absSecs >= 60 && absSecs % 60 == 0)
-                t = (absSecs / 60) + " minute" + (absSecs == 60 ? "" : "s");
-            else
-                t = absSecs + " second" + (absSecs == 1 ? "" : "s");
-            if (FromNow)
-                t = "Remind in " + t;
-            else
-                t = "Remind " + t + (Secs < 0 ? " before start time" : " after start time");
+            t = absSecs >= 60 && absSecs % 60 == 0
+                ? (absSecs / 60) + " minute" + (absSecs == 60 ? "" : "s")
+                : absSecs + " second" + (absSecs == 1 ? "" : "s");
+            t = FromNow
+                ? "Remind in " + t
+                : "Remind " + t + (Secs < 0 ? " before start time" : " after start time");
             // sanity check assertion
-            if (!Parse(t).Equals(this)) throw new Exception("Error in snooze time ToString/Parse for: " + t);
-
-            return t;
+            return Parse(t).Equals(this) ? t : throw new Exception("Error in snooze time ToString/Parse for: " + t);
         }
 
         public static List<SnoozeTime> ParseList(string list)

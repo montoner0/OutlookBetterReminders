@@ -57,16 +57,12 @@ namespace BetterReminders
             string regexSetting = Properties.Settings.Default.meetingUrlRegex;
             try
             {
-                if (string.IsNullOrWhiteSpace(regexSetting))
-                    re = new Regex(DefaultMeetingUrlRegex, RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(1));
-                else
-                    re = new Regex(regexSetting, RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(1));
+                re = string.IsNullOrWhiteSpace(regexSetting)
+                    ? new Regex(DefaultMeetingUrlRegex, RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(1))
+                    : new Regex(regexSetting, RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(1));
                 Match m = re.Match(Body);
-                if (m.Success)
-                    return m.Groups["url"].Value;
-                return "";
-            }
-            catch (Exception e)
+                return m.Success ? m.Groups["url"].Value : "";
+            } catch (Exception e)
             {
                 logger.Info("Error creating or matching regex '" + regexSetting + "' for "+this+": " + e);
                 return "";
@@ -81,8 +77,7 @@ namespace BetterReminders
         public string getOrganizer()
         {
             if (OutlookItem.Organizer == null) return null;
-            if (OutlookItem.Organizer == OutlookItem.Application.Session.CurrentUser.Name) return "<me>";
-            return OutlookItem.Organizer;
+            return OutlookItem.Organizer == OutlookItem.Application.Session.CurrentUser.Name ? "<me>" : OutlookItem.Organizer;
         }
 
         public static bool IsAppointmentCancelled(Outlook.AppointmentItem item)
@@ -118,9 +113,9 @@ namespace BetterReminders
 
         public override string ToString()
         {
-            if (deleted)
-                return "DeletedMeeting<subject=" + Subject + ">";
-            return "Meeting<start="+StartTime+", end="+EndTime+", reminder="+(IsDismissed ? "<dismissed>" : NextReminderTime.ToString())+(IsCancelled ? ", status=<cancelled>" : "")+", subject="+Subject+">";
+            return deleted
+                ? "DeletedMeeting<subject=" + Subject + ">"
+                : "Meeting<start=" +StartTime+", end="+EndTime+", reminder="+(IsDismissed ? "<dismissed>" : NextReminderTime.ToString())+(IsCancelled ? ", status=<cancelled>" : "")+", subject="+Subject+">";
         }
 
         /// Checks if this item has been modified, and updates all relevant fields if it has.

@@ -83,7 +83,6 @@ namespace BetterReminders
             meeting.Dismiss();
 
             reactivateTime = DateTime.Now + reactivateTimeSpan;
-
         }
 
         private void ReminderForm_FormClosed(object sender, FormClosedEventArgs e)
@@ -94,11 +93,7 @@ namespace BetterReminders
         private void updateStartTime()
         {
             TimeSpan span = (meeting.StartTime-DateTime.Now);
-            string spanstr;
-            if (span.TotalSeconds >= 0)
-                spanstr = "in ";
-            else
-                spanstr = "overdue by ";
+            string spanstr = span.TotalSeconds >= 0 ? "in " : "overdue by ";
             if (startTimeLabel.Font.Bold != (span.TotalSeconds < 0))
                 startTimeLabel.Font = new Font(startTimeLabel.Font, (span.TotalSeconds < 0) ? FontStyle.Bold : FontStyle.Regular);
             //assume no days
