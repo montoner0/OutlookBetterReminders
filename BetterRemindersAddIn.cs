@@ -32,10 +32,10 @@ namespace BetterReminders
     public partial class BetterRemindersAddIn
     {
         #region fields
-        private static Logger logger = Logger.GetLogger();
+        private static readonly Logger logger = Logger.GetLogger();
 
         private DateTime nextPlannedWakeup;
-        private Timer myTimer = new Timer();
+        private readonly Timer myTimer = new Timer();
 
         private System.Media.SoundPlayer soundPlayer;
 
@@ -43,7 +43,7 @@ namespace BetterReminders
         /// A list of upcoming meetings we know about already, and the time of the next reminder for each one
         /// (or null if dismissed). Items are expired from this list
         /// </summary>
-        private Dictionary<string, UpcomingMeeting> upcoming = new Dictionary<string, UpcomingMeeting>();
+        private readonly Dictionary<string, UpcomingMeeting> upcoming = new Dictionary<string, UpcomingMeeting>();
 
         /// <summary>
         /// Records the last time we searched for meetings, to ensure the next search can pick up where the last one left off
@@ -209,10 +209,10 @@ namespace BetterReminders
                     {
                         logger.Info($"Showing reminder for: {next}");
                         playReminderSound();
-                        using (ReminderForm form = new ReminderForm(next)) {
-                            form.FormClosed += ReminderFormClosedEventHandler;
-                            form.Show();
-                        }
+                        ReminderForm form = new ReminderForm(next);
+                        form.FormClosed += ReminderFormClosedEventHandler;
+                        form.Show();
+
                         // timers etc are disabled until the current window has been closed -
                         // simpler to manage and avoids getting a million popups if you leave it running while on vacation
                         return;
@@ -279,7 +279,7 @@ namespace BetterReminders
             logger.Debug("End of startup");
         }
 
-        void Application_OptionsPagesAdd(Outlook.PropertyPages Pages)
+        private void Application_OptionsPagesAdd(Outlook.PropertyPages Pages)
         {
             Pages.Add(new PreferencesPage(), "BetterReminders");
         }
@@ -316,7 +316,7 @@ namespace BetterReminders
         /// <summary>
         /// Called one at startup, after an initial delay to let outlook finish loading
         /// </summary>
-        void performDelayedStartupTasks()
+        private void performDelayedStartupTasks()
         {
             // This code is only for diagnosing tricky problems and won't be executed in a normal deployment
             if (!logger.Enabled) return;
@@ -348,7 +348,7 @@ namespace BetterReminders
             logger.Debug($"Completed advanced diagnostics - checked {count} calendar items for today\n\n");
         }
 
-        void ReminderFormClosedEventHandler(object sender, FormClosedEventArgs e)
+        private void ReminderFormClosedEventHandler(object sender, FormClosedEventArgs e)
         {
             logger.Info("Reminder window was closed");
             waitOrRemind();
